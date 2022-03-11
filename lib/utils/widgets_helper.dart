@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
 import '../enumeration/enumerations.dart';
 
 typedef TextFormFieldOnChange = Function(String str);
@@ -120,6 +122,7 @@ class WidgetsHelper {
     double? letterSpacing,
     TextDecoration? decoration,
     TextOverflow? overflow,
+    bool withGoogleFont = true,
   }) {
     return Text(
       "$text",
@@ -133,6 +136,7 @@ class WidgetsHelper {
         lineSpacing: lineSpacing,
         letterSpacing: letterSpacing,
         decoration: decoration,
+        withGoogleFont: withGoogleFont,
       ),
     );
   }
@@ -176,15 +180,29 @@ class WidgetsHelper {
     double? letterSpacing,
     TextDecoration? decoration,
     FontWeight? fontWeight,
+    bool withGoogleFont = true,
   }) {
     double fontSize = _size(size: size);
-    return TextStyle(
-      color: fontColor,
-      fontSize: fontSize,
-      height: lineSpacing,
-      letterSpacing: letterSpacing,
-      decoration: decoration,
-    );
+    if (withGoogleFont) {
+      return GoogleFonts.notoSans(
+        fontWeight: fontWeight,
+        textStyle: TextStyle(
+          color: fontColor,
+          fontSize: fontSize,
+          height: lineSpacing,
+          letterSpacing: letterSpacing,
+          decoration: decoration,
+        ),
+      );
+    } else {
+      return TextStyle(
+        color: fontColor,
+        fontSize: fontSize,
+        height: lineSpacing,
+        letterSpacing: letterSpacing,
+        decoration: decoration,
+      );
+    }
   }
 
   static TextFormField appTextFormField ({
@@ -322,14 +340,14 @@ class WidgetsHelper {
     if (passwordShowed) {
       return WidgetsHelper.appIcon(
         icon: Icons.remove_red_eye_outlined,
-        iconColor: Theme.of(context).colorScheme.primaryVariant,
+        iconColor: Theme.of(context).colorScheme.primaryContainer,
       );
     } else {
       return WidgetsHelper.appIcon(
         icon: Icons.remove_red_eye,
-        iconColor: Theme.of(context).colorScheme.primaryVariant,
+        iconColor: Theme.of(context).colorScheme.primaryContainer,
       );
-    };
+    }
   }
 
   static double _size ({
@@ -345,8 +363,10 @@ class WidgetsHelper {
         return 16;
       case WidgetSize.extremeSmall:
         return 12;
-      default :
+      default:
         return 18;
     }
   }
+
+  static double widgetSize ({required WidgetSize? size,}) => _size(size: size);
 }
