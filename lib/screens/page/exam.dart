@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:koobits_exam/api/api.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
@@ -8,6 +7,7 @@ import '../../enumeration/enumerations.dart';
 import '../../utils/utils.dart';
 import '../../blocs/blocs.dart';
 import '../../models/models.dart';
+import '../../api/api.dart';
 
 class ExamPage extends StatefulWidget {
 
@@ -153,8 +153,12 @@ class _ExamPageView extends StatelessWidget {
                             ),
                             const SizedBox(height: 10,),
                             Expanded(
-                              child: _SubmitForm(
-                                questionModel: data[index],
+                              child: BlocProvider(
+                                create: (context) => SubmitBloc(),
+                                child: _SubmitForm(
+                                  questionModel: data[index],
+                                  pageController: pageController,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 10,),
@@ -208,58 +212,96 @@ class _DifficultyView extends StatelessWidget {
 
 class _SubmitForm extends StatelessWidget {
 
-  const _SubmitForm({
+  _SubmitForm({
     Key? key,
     required this.questionModel,
+    required this.pageController,
   }) : super(key: key,);
 
   final QuestionModel questionModel;
+  final TextEditingController _textEditingController = TextEditingController();
+  final PageController pageController;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 40,),
-      child: Row(
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: <Widget>[
-                      WidgetsHelper.appText(text: questionModel.question),
-                      SizedBox(
-                        height: WidgetsHelper.widgetSize(size: WidgetSize.normal,),
-                        width: 50,
-                        child: TextFormField(),
+    return BlocListener<SubmitBloc, SubmitState>(
+      listener: (context, state) async {
+        final _dialogHelper = DialogHelper.init(context: context);
+        if (state.status == SubmitStatus.processing) {
+          await _dialogHelper.appShowDialog(
+            type: DialogType.loading,
+          );
+        } else if (state.status == SubmitStatus.failed) {
+          _dialogHelper.dismissDialog();
+          _dialogHelper.appShowDialog(
+            type: DialogType.message,
+            message: state.error!,
+            messageType: MessageType.error,
+          );
+        } else if (state.status == SubmitStatus.succeeded) {
+          /// successfully update photoUrl;
+          _dialogHelper.dismissDialog();
+          pageController.animateToPage(pageController.page!.toInt() + 1,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeIn,
+          );
+        }
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 40,),
+        child: Row(
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        WidgetsHelper.appText(text: questionModel.question),
+                        SizedBox(
+                          width: 100,
+                          child: TextFormField(
+                            textAlignVertical: TextAlignVertical.center,
+                            controller: _textEditingController,
+                            style: WidgetsHelper.appTextStyle(size: WidgetSize.normal),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      context.read<SubmitBloc>().add(
+                        SubmitAnswerRequest(
+                          id: questionModel.id,
+                          answer: _textEditingController.text,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.deepOrange,
+                        borderRadius: BorderRadius.all(Radius.circular(15)),
                       ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: null,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.deepOrange,
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                    child: WidgetsHelper.appText(
-                      text: "提交回答",
-                      fontColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                      child: WidgetsHelper.appText(
+                        text: "提交回答",
+                        fontColor: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
